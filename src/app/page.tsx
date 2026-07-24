@@ -1,46 +1,29 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { Project, STATUS_CONFIG, DEFAULT_FINANCIALS } from '@/lib/types'
 import { calculate, formatShort } from '@/lib/calc'
 import GlossaryModal from '@/components/glossary-modal'
 
 export default function Dashboard() {
-  const { user, loading, signOut } = useAuth()
   const router = useRouter()
   const [projects, setProjects] = useState<Project[]>([])
-  const [loadingProjects, setLoadingProjects] = useState(true)
+  const [loading, setLoading] = useState(true)
   const [glossaryOpen, setGlossaryOpen] = useState(false)
 
-  const fetchProjects = useCallback(async () => {
-    if (!user) return
-    const { data } = await supabase
-      .from('projects')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('updated_at', { ascending: false })
-    setProjects(data || [])
-    setLoadingProjects(false)
-  }, [user])
-
   useEffect(() => {
-    if (!loading && !user) router.push('/login')
-  }, [loading, user, router])
-
-  useEffect(() => {
-    if (user) fetchProjects()
-  }, [user, fetchProjects])
-
-  if (loading || !user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-emerald-brand border-t-transparent" />
-      </div>
-    )
-  }
+    async function fetchProjects() {
+      const { data } = await supabase
+        .from('projects')
+        .select('*')
+        .order('updated_at', { ascending: false })
+      setProjects(data || [])
+      setLoading(false)
+    }
+    fetchProjects()
+  }, [])
 
   const stats = projects.reduce(
     (acc, p) => {
@@ -77,7 +60,6 @@ export default function Dashboard() {
           <div className="flex gap-2 flex-wrap">
             <HeroBtn onClick={() => setGlossaryOpen(true)}>Glosario</HeroBtn>
             <HeroBtn onClick={handleExport}>Exportar</HeroBtn>
-            <HeroBtn onClick={signOut}>Salir</HeroBtn>
           </div>
         </div>
         <div className="flex gap-3 mt-5 flex-wrap">
@@ -89,7 +71,7 @@ export default function Dashboard() {
       </div>
 
       {/* Cards */}
-      {loadingProjects ? (
+      {loading ? (
         <div className="flex justify-center py-20">
           <div className="animate-spin rounded-full h-8 w-8 border-2 border-emerald-brand border-t-transparent" />
         </div>

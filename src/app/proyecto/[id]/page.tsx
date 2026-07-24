@@ -2,14 +2,12 @@
 
 import { useEffect, useState, useCallback, use } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { Project, ProjectImage } from '@/lib/types'
 import ProjectForm from '@/components/project-form'
 
 export default function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const { user, loading } = useAuth()
   const router = useRouter()
   const [project, setProject] = useState<Project | null>(null)
   const [images, setImages] = useState<ProjectImage[]>([])
@@ -18,12 +16,10 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   const [delStep, setDelStep] = useState(0)
 
   const fetchProject = useCallback(async () => {
-    if (!user) return
     const { data } = await supabase
       .from('projects')
       .select('*')
       .eq('id', id)
-      .eq('user_id', user.id)
       .single()
 
     if (!data) { router.push('/'); return }
@@ -36,17 +32,13 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
       .order('order_index')
     setImages(imgs || [])
     setLoadingProject(false)
-  }, [user, id, router])
+  }, [id, router])
 
   useEffect(() => {
-    if (!loading && !user) router.push('/login')
-  }, [loading, user, router])
+    fetchProject()
+  }, [fetchProject])
 
-  useEffect(() => {
-    if (user) fetchProject()
-  }, [user, fetchProject])
-
-  if (loading || !user || loadingProject || !project) {
+  if (loadingProject || !project) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-2 border-emerald-brand border-t-transparent" />
@@ -56,12 +48,11 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
 
   const handleSave = async (updated: Project) => {
     setSaving(true)
-    const { id: _, created_at, user_id, ...data } = updated
+    const { id: _, created_at, ...data } = updated
     const { error } = await supabase
       .from('projects')
       .update({ ...data, updated_at: new Date().toISOString() })
       .eq('id', id)
-      .eq('user_id', user.id)
 
     if (error) { alert('Error: ' + error.message); setSaving(false); return }
     setSaving(false)
@@ -70,7 +61,6 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
 
   const handleDelete = async () => {
     if (delStep === 0) { setDelStep(1); return }
-    await supabase.from('project_images').delete().eq('project_id', id)
     const { data: imgs } = await supabase
       .from('project_images')
       .select('url')
@@ -82,7 +72,8 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
       }).filter(Boolean)
       if (paths.length) await supabase.storage.from('project-images').remove(paths)
     }
-    await supabase.from('projects').delete().eq('id', id).eq('user_id', user.id)
+    await supabase.from('project_images').delete().eq('project_id', id)
+    await supabase.from('projects').delete().eq('id', id)
     router.push('/')
   }
 

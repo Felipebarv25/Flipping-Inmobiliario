@@ -1,15 +1,12 @@
 'use client'
 
-import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { Project, DEFAULT_FINANCIALS } from '@/lib/types'
 import ProjectForm from '@/components/project-form'
 
 const emptyProject: Project = {
   id: '',
-  user_id: '',
   name: '',
   address: '',
   city: '',
@@ -32,26 +29,13 @@ const emptyProject: Project = {
 }
 
 export default function NewProjectPage() {
-  const { user, loading } = useAuth()
   const router = useRouter()
-
-  useEffect(() => {
-    if (!loading && !user) router.push('/login')
-  }, [loading, user, router])
-
-  if (loading || !user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-emerald-brand border-t-transparent" />
-      </div>
-    )
-  }
 
   const handleSave = async (project: Project) => {
     const { id, created_at, updated_at, ...data } = project
     const { error } = await supabase
       .from('projects')
-      .insert({ ...data, user_id: user.id })
+      .insert(data)
 
     if (error) {
       alert('Error al guardar: ' + error.message)
