@@ -2,10 +2,11 @@
 
 import { useState, useMemo } from 'react'
 import { Project, ProjectImage, ProjectStatus, STATUS_CONFIG, DEFAULT_FINANCIALS, Financials, ObraItems, OBRA_LABELS } from '@/lib/types'
-import { calculate } from '@/lib/calc'
+import { calculate, formatCOP } from '@/lib/calc'
 import CurrencyInput from './currency-input'
 import VerdictPanel from './verdict-panel'
 import ImageGallery from './image-gallery'
+import CitySelect from './city-select'
 
 interface Props {
   project: Project
@@ -60,6 +61,12 @@ export default function ProjectForm({ project, images, onSave, onDelete, onImage
     if (onDelete) await onDelete()
   }
 
+  const transCompra = f.precio_compra * (f.pct_trans_compra / 100)
+  const transVenta = f.arv * (f.pct_trans_venta / 100)
+  const comision = f.arv * (f.pct_comision / 100)
+  const ganancia = f.arv - (f.precio_compra + result.obraConImprevistos + transCompra + result.holdingTotal) - transVenta - comision
+  const impuesto = ganancia > 0 ? ganancia * (f.pct_impuesto / 100) : 0
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_370px] gap-6 items-start">
       {/* Left column - Inputs */}
@@ -72,7 +79,7 @@ export default function ProjectForm({ project, images, onSave, onDelete, onImage
             </Field>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Dirección"><input type="text" value={form.address} onChange={e => set('address', e.target.value)} placeholder="Cra 15 #134-20" className="input-base" /></Field>
-              <Field label="Ciudad"><input type="text" value={form.city} onChange={e => set('city', e.target.value)} placeholder="Bogotá" className="input-base" /></Field>
+              <Field label="Ciudad / Municipio"><CitySelect value={form.city} onChange={v => set('city', v)} /></Field>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Barrio"><input type="text" value={form.barrio} onChange={e => set('barrio', e.target.value)} placeholder="Cedritos" className="input-base" /></Field>
@@ -114,11 +121,16 @@ export default function ProjectForm({ project, images, onSave, onDelete, onImage
         </Section>
 
         {/* Photos */}
-        {!isNew && (
-          <Section title="Fotos">
+        <Section title="Fotos">
+          {isNew ? (
+            <div className="text-center py-6 text-gray-400">
+              <div className="text-3xl mb-2">📷</div>
+              <p className="text-sm">Guarda el proyecto primero para agregar fotos.</p>
+            </div>
+          ) : (
             <ImageGallery projectId={form.id} images={images} onImagesChange={onImagesChange} />
-          </Section>
-        )}
+          )}
+        </Section>
 
         {/* Financial - Purchase & ARV */}
         <Section title="Propiedad (Financiero)">
@@ -174,27 +186,35 @@ export default function ProjectForm({ project, images, onSave, onDelete, onImage
 
         {/* Transaction */}
         <Section title="Transacción">
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Costos compra">
-              <div className="flex items-center gap-2">
-                <input type="number" step={0.1} value={f.pct_trans_compra} onChange={e => setFin('pct_trans_compra', Number(e.target.value))} className="input-base w-20" /><span className="text-sm text-gray-500">%</span>
-              </div>
-            </Field>
-            <Field label="Costos venta">
-              <div className="flex items-center gap-2">
-                <input type="number" step={0.1} value={f.pct_trans_venta} onChange={e => setFin('pct_trans_venta', Number(e.target.value))} className="input-base w-20" /><span className="text-sm text-gray-500">%</span>
-              </div>
-            </Field>
-            <Field label="Comisión inmobiliaria">
-              <div className="flex items-center gap-2">
-                <input type="number" step={0.1} value={f.pct_comision} onChange={e => setFin('pct_comision', Number(e.target.value))} className="input-base w-20" /><span className="text-sm text-gray-500">%</span>
-              </div>
-            </Field>
-            <Field label="Impuesto ganancia">
-              <div className="flex items-center gap-2">
-                <input type="number" step={0.1} value={f.pct_impuesto} onChange={e => setFin('pct_impuesto', Number(e.target.value))} className="input-base w-20" /><span className="text-sm text-gray-500">%</span>
-              </div>
-            </Field>
+          <div className="grid grid-cols-2 gap-4">
+            <TransactionField
+              label="Costos compra"
+              amount={transCompra}
+              pct={f.pct_trans_compra}
+              onPctChange={v => setFin('pct_trans_compra', v)}
+              basis="del precio de compra"
+            />
+            <TransactionField
+              label="Costos venta"
+              amount={transVenta}
+              pct={f.pct_trans_venta}
+              onPctChange={v => setFin('pct_trans_venta', v)}
+              basis="del ARV"
+            />
+            <TransactionField
+              label="Comisión inmobiliaria"
+              amount={comision}
+              pct={f.pct_comision}
+              onPctChange={v => setFin('pct_comision', v)}
+              basis="del ARV"
+            />
+            <TransactionField
+              label="Impuesto ganancia"
+              amount={impuesto}
+              pct={f.pct_impuesto}
+              onPctChange={v => setFin('pct_impuesto', v)}
+              basis="de la ganancia"
+            />
           </div>
         </Section>
       </div>
@@ -225,6 +245,23 @@ export default function ProjectForm({ project, images, onSave, onDelete, onImage
             {saving ? 'Guardando...' : 'Guardar'}
           </button>
         </div>
+      </div>
+    </div>
+  )
+}
+
+function TransactionField({ label, amount, pct, onPctChange, basis }: {
+  label: string; amount: number; pct: number; onPctChange: (v: number) => void; basis: string
+}) {
+  return (
+    <div>
+      <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{label}</span>
+      <p className="text-base font-bold tabular-nums text-gray-900 dark:text-white" style={{ fontFamily: 'Georgia, serif' }}>
+        {formatCOP(amount)}
+      </p>
+      <div className="flex items-center gap-1 mt-1">
+        <input type="number" step={0.1} min={0} value={pct} onChange={e => onPctChange(Number(e.target.value))} className="w-14 px-2 py-0.5 rounded border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-[#1E222A] text-gray-600 dark:text-gray-400 text-xs tabular-nums focus:outline-none focus:border-emerald-brand" />
+        <span className="text-[10px] text-gray-400">% {basis}</span>
       </div>
     </div>
   )

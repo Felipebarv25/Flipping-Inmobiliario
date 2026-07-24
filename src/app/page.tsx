@@ -10,19 +10,37 @@ import GlossaryModal from '@/components/glossary-modal'
 export default function Dashboard() {
   const router = useRouter()
   const [projects, setProjects] = useState<Project[]>([])
+  const [thumbs, setThumbs] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
   const [glossaryOpen, setGlossaryOpen] = useState(false)
 
   useEffect(() => {
-    async function fetchProjects() {
+    async function fetchData() {
       const { data } = await supabase
         .from('projects')
         .select('*')
         .order('updated_at', { ascending: false })
-      setProjects(data || [])
+      const list = data || []
+      setProjects(list)
+
+      if (list.length) {
+        const ids = list.map(p => p.id)
+        const { data: imgs } = await supabase
+          .from('project_images')
+          .select('project_id, url')
+          .in('project_id', ids)
+          .order('order_index', { ascending: true })
+        if (imgs) {
+          const map: Record<string, string> = {}
+          for (const img of imgs) {
+            if (!map[img.project_id]) map[img.project_id] = img.url
+          }
+          setThumbs(map)
+        }
+      }
       setLoading(false)
     }
-    fetchProjects()
+    fetchData()
   }, [])
 
   const stats = projects.reduce(
@@ -89,14 +107,19 @@ export default function Dashboard() {
           {projects.map(p => {
             const r = calculate(p.financials || DEFAULT_FINANCIALS)
             const sc = STATUS_CONFIG[p.status] || STATUS_CONFIG.prospecto
+            const thumb = thumbs[p.id]
             return (
               <div
                 key={p.id}
                 onClick={() => router.push(`/proyecto/${p.id}`)}
                 className="bg-white dark:bg-[#1A1E24] border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden cursor-pointer hover:-translate-y-0.5 hover:shadow-lg transition-all"
               >
-                <div className="h-36 bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-4xl opacity-20 relative">
-                  🏠
+                <div className="h-36 bg-gray-100 dark:bg-gray-800 flex items-center justify-center relative overflow-hidden">
+                  {thumb ? (
+                    <img src={thumb} alt={p.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-4xl opacity-20">🏠</span>
+                  )}
                   <span className="absolute top-2 right-2 px-2.5 py-0.5 rounded-full text-white text-[9px] font-extrabold tracking-wider uppercase" style={{ background: sc.color }}>
                     {sc.label}
                   </span>

@@ -33,15 +33,17 @@ export default function NewProjectPage() {
 
   const handleSave = async (project: Project) => {
     const { id, created_at, updated_at, ...data } = project
-    const { error } = await supabase
+    const { data: inserted, error } = await supabase
       .from('projects')
       .insert(data)
+      .select('id')
+      .single()
 
     if (error) {
       alert('Error al guardar: ' + error.message)
       return
     }
-    router.push('/')
+    router.push(`/proyecto/${inserted.id}`)
   }
 
   return (
