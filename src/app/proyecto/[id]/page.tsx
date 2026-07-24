@@ -1,0 +1,121 @@
+'use client'
+
+import { useEffect, useState, useCallback, use } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/lib/auth-context'
+import { supabase } from '@/lib/supabase'
+import { Project, ProjectImage } from '@/lib/types'
+import ProjectForm from '@/components/project-form'
+
+export default function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
+  const { user, loading } = useAuth()
+  const router = useRouter()
+  const [project, setProject] = useState<Project | null>(null)
+  const [images, setImages] = useState<ProjectImage[]>([])
+  const [loadingProject, setLoadingProject] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [delStep, setDelStep] = useState(0)
+
+  const fetchProject = useCallback(async () => {
+    if (!user) return
+    const { data } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .single()
+
+    if (!data) { router.push('/'); return }
+    setProject(data)
+
+    const { data: imgs } = await supabase
+      .from('project_images')
+      .select('*')
+      .eq('project_id', id)
+      .order('order_index')
+    setImages(imgs || [])
+    setLoadingProject(false)
+  }, [user, id, router])
+
+  useEffect(() => {
+    if (!loading && !user) router.push('/login')
+  }, [loading, user, router])
+
+  useEffect(() => {
+    if (user) fetchProject()
+  }, [user, fetchProject])
+
+  if (loading || !user || loadingProject || !project) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-emerald-brand border-t-transparent" />
+      </div>
+    )
+  }
+
+  const handleSave = async (updated: Project) => {
+    setSaving(true)
+    const { id: _, created_at, user_id, ...data } = updated
+    const { error } = await supabase
+      .from('projects')
+      .update({ ...data, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('user_id', user.id)
+
+    if (error) { alert('Error: ' + error.message); setSaving(false); return }
+    setSaving(false)
+    router.push('/')
+  }
+
+  const handleDelete = async () => {
+    if (delStep === 0) { setDelStep(1); return }
+    await supabase.from('project_images').delete().eq('project_id', id)
+    const { data: imgs } = await supabase
+      .from('project_images')
+      .select('url')
+      .eq('project_id', id)
+    if (imgs) {
+      const paths = imgs.map(i => {
+        const parts = i.url.split('/project-images/')
+        return parts[1]
+      }).filter(Boolean)
+      if (paths.length) await supabase.storage.from('project-images').remove(paths)
+    }
+    await supabase.from('projects').delete().eq('id', id).eq('user_id', user.id)
+    router.push('/')
+  }
+
+  return (
+    <div className="max-w-[980px] mx-auto px-5 pb-10">
+      <div className="flex items-center justify-between py-4 mb-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50 bg-[#F6F5F1] dark:bg-[#0F1215]">
+        <button onClick={() => router.push('/')} className="text-emerald-brand font-semibold text-sm hover:underline">
+          ← Portafolio
+        </button>
+        <span className="font-bold text-lg truncate max-w-[40%] text-center" style={{ fontFamily: 'Georgia, serif' }}>{project.name}</span>
+        <div className="flex gap-2">
+          <button
+            onClick={handleDelete}
+            className={`px-3 py-2 rounded-lg font-semibold text-sm border transition ${delStep ? 'bg-danger text-white border-danger animate-pulse' : 'text-danger border-danger'}`}
+          >
+            {delStep ? '¿Eliminar?' : 'Eliminar'}
+          </button>
+          <button onClick={() => {
+            const form = document.querySelector('[data-save-btn]') as HTMLButtonElement
+            form?.click()
+          }} disabled={saving} className="px-5 py-2 bg-emerald-brand text-white rounded-lg font-semibold text-sm hover:bg-emerald-hover transition disabled:opacity-50">
+            {saving ? 'Guardando...' : 'Guardar'}
+          </button>
+        </div>
+      </div>
+      <ProjectForm
+        project={project}
+        images={images}
+        onSave={handleSave}
+        onDelete={handleDelete}
+        onImagesChange={setImages}
+        isNew={false}
+      />
+    </div>
+  )
+}

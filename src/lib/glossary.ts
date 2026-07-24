@@ -1,0 +1,17 @@
+export const GLOSSARY = [
+  { term: 'ARV (After Repair Value)', def: 'Valor estimado del inmueble <b>después</b> de la renovación. Se calcula con propiedades similares vendidas recientemente en la zona.' },
+  { term: 'Avalúo', def: 'Valoración formal del inmueble. <i>Catastral</i> (base del predial) o <i>comercial</i> (perito certificado, valor de mercado).' },
+  { term: 'Certificado de Tradición y Libertad', def: 'Historial jurídico del inmueble en la SNR: propietarios, hipotecas, embargos. Primer documento a revisar antes de comprar.' },
+  { term: 'Comisión Inmobiliaria', def: 'Porcentaje por gestionar la venta. En Colombia, típicamente <b>3%</b> del valor de venta.' },
+  { term: 'Costos de Transacción', def: 'Gastos legales: notaría (~0,3%), registro (~1,67%), retención (1%).' },
+  { term: 'Escritura Pública', def: 'Documento notarial de compraventa. Solo al <b>registrarla</b> en Instrumentos Públicos se transfiere la propiedad.' },
+  { term: 'Estrato', def: 'Clasificación socioeconómica (1-6). Define tarifas de servicios y predial. Estratos <b>3-4</b> tienen más liquidez para flipping.' },
+  { term: 'Flipping', def: 'Comprar un inmueble por debajo de su valor, renovarlo y revenderlo rápidamente para obtener ganancia.' },
+  { term: 'Ganancia Ocasional', def: 'Impuesto sobre la utilidad en venta de inmuebles en Colombia. Tarifa: <b>15%</b> sobre la ganancia neta.' },
+  { term: 'Holding', def: 'Periodo entre la compra y la venta. Incluye costos recurrentes: administración, predial, servicios.' },
+  { term: 'Predial', def: 'Impuesto anual sobre bienes inmuebles. Se calcula sobre el avalúo catastral. Varía por municipio y estrato.' },
+  { term: 'Promesa de Compraventa', def: 'Contrato preliminar que compromete a las partes. Incluye precio, forma de pago y plazo para la escritura.' },
+  { term: 'Regla del 70%', def: 'Heurística: no pagar más del <b>70% del ARV menos costos de obra</b>. Fórmula: Máx. compra = ARV × 0.7 − Obra.' },
+  { term: 'Retención en la Fuente', def: 'Anticipo de impuesto que retiene el notario al vendedor. Generalmente <b>1%</b> del valor de venta.' },
+  { term: 'ROI', def: 'Return on Investment. Utilidad neta ÷ Inversión total × 100. Mide la rentabilidad del proyecto.' },
+]
