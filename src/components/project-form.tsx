@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { Project, ProjectImage, ProjectStatus, STATUS_CONFIG, DEFAULT_FINANCIALS, Financials, ObraItems, OBRA_LABELS } from '@/lib/types'
-import { calculate, formatCOP } from '@/lib/calc'
+import { calculate } from '@/lib/calc'
 import CurrencyInput from './currency-input'
 import VerdictPanel from './verdict-panel'
 import ImageGallery from './image-gallery'
@@ -61,11 +61,19 @@ export default function ProjectForm({ project, images, onSave, onDelete, onImage
     if (onDelete) await onDelete()
   }
 
-  const transCompra = f.precio_compra * (f.pct_trans_compra / 100)
-  const transVenta = f.arv * (f.pct_trans_venta / 100)
-  const comision = f.arv * (f.pct_comision / 100)
-  const ganancia = f.arv - (f.precio_compra + result.obraConImprevistos + transCompra + result.holdingTotal) - transVenta - comision
-  const impuesto = ganancia > 0 ? ganancia * (f.pct_impuesto / 100) : 0
+  const setTransCompra = (v: number) => {
+    if (f.precio_compra > 0) setFin('pct_trans_compra', (v / f.precio_compra) * 100)
+  }
+  const setTransVenta = (v: number) => {
+    if (f.arv > 0) setFin('pct_trans_venta', (v / f.arv) * 100)
+  }
+  const setComision = (v: number) => {
+    if (f.arv > 0) setFin('pct_comision', (v / f.arv) * 100)
+  }
+  const setImpuesto = (v: number) => {
+    const ganancia = f.arv - result.inversionTotal - result.costosVenta
+    if (ganancia > 0) setFin('pct_impuesto', (v / ganancia) * 100)
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_370px] gap-6 items-start">
@@ -162,10 +170,7 @@ export default function ProjectForm({ project, images, onSave, onDelete, onImage
           )}
           <div className="mt-3">
             <Field label="Imprevistos" full>
-              <div className="flex items-center gap-2">
-                <input type="number" min={0} max={50} value={f.imprevistos} onChange={e => setFin('imprevistos', Number(e.target.value))} className="input-base w-24" />
-                <span className="text-sm text-gray-500">%</span>
-              </div>
+              <CurrencyInput value={f.imprevistos} onChange={v => setFin('imprevistos', v)} />
             </Field>
           </div>
         </Section>
@@ -187,41 +192,17 @@ export default function ProjectForm({ project, images, onSave, onDelete, onImage
         {/* Transaction */}
         <Section title="Transacción">
           <div className="grid grid-cols-2 gap-4">
-            <TransactionField
-              label="Costos compra"
-              amount={transCompra}
-              pct={f.pct_trans_compra}
-              onPctChange={v => setFin('pct_trans_compra', v)}
-              basis="del precio de compra"
-            />
-            <TransactionField
-              label="Costos venta"
-              amount={transVenta}
-              pct={f.pct_trans_venta}
-              onPctChange={v => setFin('pct_trans_venta', v)}
-              basis="del ARV"
-            />
-            <TransactionField
-              label="Comisión inmobiliaria"
-              amount={comision}
-              pct={f.pct_comision}
-              onPctChange={v => setFin('pct_comision', v)}
-              basis="del ARV"
-            />
-            <TransactionField
-              label="Impuesto ganancia"
-              amount={impuesto}
-              pct={f.pct_impuesto}
-              onPctChange={v => setFin('pct_impuesto', v)}
-              basis="de la ganancia"
-            />
+            <Field label="Costos compra"><CurrencyInput value={result.transCompra} onChange={setTransCompra} /></Field>
+            <Field label="Costos venta"><CurrencyInput value={result.transVenta} onChange={setTransVenta} /></Field>
+            <Field label="Comisión inmobiliaria"><CurrencyInput value={result.comision} onChange={setComision} /></Field>
+            <Field label="Impuesto ganancia"><CurrencyInput value={result.impuesto} onChange={setImpuesto} /></Field>
           </div>
         </Section>
       </div>
 
-      {/* Right column - Results */}
-      <div className="space-y-4">
-        <VerdictPanel result={result} hasData={hasData} />
+      {/* Right column - Results (sticky with scroll) */}
+      <div className="space-y-4 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:pr-1">
+        <VerdictPanel result={result} financials={f} hasData={hasData} />
 
         {/* Notes */}
         <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1A1E24] p-4">
@@ -245,23 +226,6 @@ export default function ProjectForm({ project, images, onSave, onDelete, onImage
             {saving ? 'Guardando...' : 'Guardar'}
           </button>
         </div>
-      </div>
-    </div>
-  )
-}
-
-function TransactionField({ label, amount, pct, onPctChange, basis }: {
-  label: string; amount: number; pct: number; onPctChange: (v: number) => void; basis: string
-}) {
-  return (
-    <div>
-      <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{label}</span>
-      <p className="text-base font-bold tabular-nums text-gray-900 dark:text-white" style={{ fontFamily: 'Georgia, serif' }}>
-        {formatCOP(amount)}
-      </p>
-      <div className="flex items-center gap-1 mt-1">
-        <input type="number" step={0.1} min={0} value={pct} onChange={e => onPctChange(Number(e.target.value))} className="w-14 px-2 py-0.5 rounded border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-[#1E222A] text-gray-600 dark:text-gray-400 text-xs tabular-nums focus:outline-none focus:border-emerald-brand" />
-        <span className="text-[10px] text-gray-400">% {basis}</span>
       </div>
     </div>
   )

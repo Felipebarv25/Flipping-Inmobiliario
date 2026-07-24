@@ -1,9 +1,11 @@
 'use client'
 
 import { CalcResult, formatCOP } from '@/lib/calc'
+import { Financials } from '@/lib/types'
 
 interface Props {
   result: CalcResult
+  financials: Financials
   hasData: boolean
 }
 
@@ -14,11 +16,12 @@ const VERDICT_STYLES = {
   pierde: { bg: 'bg-danger-bg dark:bg-red-900/20', badge: 'bg-danger', text: 'text-danger' },
 }
 
-export default function VerdictPanel({ result, hasData }: Props) {
+export default function VerdictPanel({ result, financials, hasData }: Props) {
   const s = VERDICT_STYLES[result.verdict]
+  const f = financials
 
   return (
-    <div className="space-y-4 sticky top-20">
+    <div className="space-y-4">
       {/* Verdict */}
       <div className={`rounded-xl p-5 text-center border border-gray-200 dark:border-gray-700 ${hasData ? s.bg : 'bg-gray-100 dark:bg-gray-800'}`}>
         {hasData ? (
@@ -71,18 +74,21 @@ export default function VerdictPanel({ result, hasData }: Props) {
         {hasData ? (
           <div className="space-y-2 text-sm">
             <Row label="Inversión total" value={result.inversionTotal} bold />
-            <Row label="Precio compra" value={result.inversionTotal - result.obraConImprevistos - result.transCompra - result.holdingTotal} sub />
+            <Row label="Precio compra" value={f.precio_compra} sub />
             <Row label="Obra + imprevistos" value={result.obraConImprevistos} sub />
-            <Row label={`Trans. compra (${((result.transCompra / (result.inversionTotal - result.obraConImprevistos - result.transCompra - result.holdingTotal)) * 100 || 0).toFixed(1)}%)`} value={result.transCompra} sub />
+            <Row label={`Trans. compra (${pct(result.transCompra, f.precio_compra)})`} value={result.transCompra} sub />
             {result.holdingTotal > 0 && <Row label="Holding" value={result.holdingTotal} sub />}
             <div className="border-t border-gray-100 dark:border-gray-700 my-2" />
             <Row label="Costos venta" value={result.costosVenta} bold />
-            <Row label="Trans. venta" value={result.transVenta} sub />
-            <Row label="Comisión" value={result.comision} sub />
+            <Row label={`Trans. venta (${pct(result.transVenta, f.arv)})`} value={result.transVenta} sub />
+            <Row label={`Comisión (${pct(result.comision, f.arv)})`} value={result.comision} sub />
             <div className="border-t border-gray-100 dark:border-gray-700 my-2" />
-            <Row label={`Impuesto (${result.impuesto > 0 ? '15%' : '0%'})`} value={result.impuesto} bold />
+            {(() => {
+              const ganancia = f.arv - result.inversionTotal - result.costosVenta
+              return <Row label={`Impuesto (${pct(result.impuesto, ganancia > 0 ? ganancia : 0)})`} value={result.impuesto} bold />
+            })()}
             <div className="border-t-2 border-emerald-brand/20 my-2" />
-            <Row label="Venta (ARV)" value={result.inversionTotal + result.costosVenta + result.impuesto + result.utilidadNeta} bold />
+            <Row label="Venta (ARV)" value={f.arv} bold />
             <Row label="Total egresos" value={result.totalEgresos} bold color="text-danger" />
             <Row label="Utilidad neta" value={result.utilidadNeta} bold color={result.utilidadNeta >= 0 ? 'text-emerald-brand' : 'text-danger'} big />
           </div>
@@ -92,6 +98,11 @@ export default function VerdictPanel({ result, hasData }: Props) {
       </div>
     </div>
   )
+}
+
+function pct(part: number, total: number): string {
+  if (!total) return '0%'
+  return `${((part / total) * 100).toFixed(1)}%`
 }
 
 function Row({ label, value, bold, sub, color, big }: { label: string; value: number; bold?: boolean; sub?: boolean; color?: string; big?: boolean }) {

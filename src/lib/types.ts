@@ -78,7 +78,7 @@ export const DEFAULT_FINANCIALS: Financials = {
     electrica: 0, plomeria: 0, pintura: 0, carpinteria: 0,
     ventanas: 0, fachada: 0, aseo: 0, otros: 0,
   },
-  imprevistos: 15,
+  imprevistos: 0,
   meses: 6,
   admin_mensual: 0,
   predial_mensual: 0,

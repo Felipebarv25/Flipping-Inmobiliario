@@ -27,8 +27,7 @@ export function sumObra(obra: ObraItems): number {
 
 export function calculate(f: Financials): CalcResult {
   const obraTotal = sumObra(f.obra)
-  const imprevistosVal = obraTotal * (f.imprevistos / 100)
-  const obraConImprevistos = obraTotal + imprevistosVal
+  const obraConImprevistos = obraTotal + (f.imprevistos || 0)
 
   const transCompra = f.precio_compra * (f.pct_trans_compra / 100)
   const holdingMensual = (f.admin_mensual || 0) + (f.predial_mensual || 0) + (f.servicios_mensual || 0)
