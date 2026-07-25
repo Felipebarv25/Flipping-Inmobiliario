@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, MutableRefObject } from 'react'
 import { Project, ProjectImage, ProjectStatus, STATUS_CONFIG, DEFAULT_FINANCIALS, Financials, ObraItems, OBRA_LABELS } from '@/lib/types'
 import { calculate } from '@/lib/calc'
 import CurrencyInput from './currency-input'
@@ -16,9 +16,10 @@ interface Props {
   onDelete?: () => Promise<void>
   onImagesChange: (images: ProjectImage[]) => void
   isNew: boolean
+  saveRef?: MutableRefObject<(() => void) | null>
 }
 
-export default function ProjectForm({ project, images, onSave, onDelete, onImagesChange, isNew }: Props) {
+export default function ProjectForm({ project, images, onSave, onDelete, onImagesChange, isNew, saveRef }: Props) {
   const [form, setForm] = useState<Project>(project)
   const [saving, setSaving] = useState(false)
 
@@ -57,6 +58,8 @@ export default function ProjectForm({ project, images, onSave, onDelete, onImage
     setSaving(false)
   }
 
+  if (saveRef) saveRef.current = handleSave
+
   const handleDelete = async () => {
     if (onDelete) await onDelete()
   }
@@ -76,7 +79,7 @@ export default function ProjectForm({ project, images, onSave, onDelete, onImage
   }
 
   return (
-    <form id="project-form" onSubmit={e => { e.preventDefault(); handleSave() }} className="grid grid-cols-1 lg:grid-cols-[1fr_370px] gap-6 items-start">
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_370px] gap-6 items-start">
       {/* Left column - Inputs */}
       <div className="space-y-5">
         {/* Project Info */}
@@ -232,12 +235,12 @@ export default function ProjectForm({ project, images, onSave, onDelete, onImage
               Eliminar
             </button>
           )}
-          <button type="submit" disabled={saving} className="flex-1 py-2.5 bg-emerald-brand text-white rounded-lg font-semibold text-sm hover:bg-emerald-hover transition disabled:opacity-50">
+          <button type="button" onClick={handleSave} disabled={saving} className="flex-1 py-2.5 bg-emerald-brand text-white rounded-lg font-semibold text-sm hover:bg-emerald-hover transition disabled:opacity-50">
             {saving ? 'Guardando...' : 'Guardar'}
           </button>
         </div>
       </div>
-    </form>
+    </div>
   )
 }
 
