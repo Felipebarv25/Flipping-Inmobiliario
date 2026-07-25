@@ -53,9 +53,14 @@ export default function NewProjectPage() {
           ← Portafolio
         </button>
         <span className="font-bold text-lg" style={{ fontFamily: 'Georgia, serif' }}>Nueva propiedad</span>
-        <button type="button" onClick={() => (document.getElementById('project-form') as HTMLFormElement)?.requestSubmit()} className="px-5 py-2 bg-emerald-brand text-white rounded-lg font-semibold text-sm hover:bg-emerald-hover transition">
-          Guardar
-        </button>
+        <div className="flex gap-2">
+          <button type="button" onClick={() => { if (confirm('¿Seguro que desea descartar esta propiedad?')) router.push('/') }} className="px-3 py-2 rounded-lg font-semibold text-sm border text-danger border-danger transition hover:bg-danger hover:text-white">
+            Eliminar
+          </button>
+          <button type="button" onClick={() => (document.getElementById('project-form') as HTMLFormElement)?.requestSubmit()} className="px-5 py-2 bg-emerald-brand text-white rounded-lg font-semibold text-sm hover:bg-emerald-hover transition">
+            Guardar
+          </button>
+        </div>
       </div>
       <ProjectForm project={emptyProject} images={[]} onSave={handleSave} onImagesChange={() => {}} isNew />
     </div>

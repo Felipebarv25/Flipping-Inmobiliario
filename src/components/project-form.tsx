@@ -21,7 +21,7 @@ interface Props {
 export default function ProjectForm({ project, images, onSave, onDelete, onImagesChange, isNew }: Props) {
   const [form, setForm] = useState<Project>(project)
   const [saving, setSaving] = useState(false)
-  const [delStep, setDelStep] = useState(0)
+
   const [obraOpen, setObraOpen] = useState(false)
   const [notes, setNotes] = useState(project.notes || '')
 
@@ -58,7 +58,6 @@ export default function ProjectForm({ project, images, onSave, onDelete, onImage
   }
 
   const handleDelete = async () => {
-    if (delStep === 0) { setDelStep(1); return }
     if (onDelete) await onDelete()
   }
 
@@ -228,9 +227,9 @@ export default function ProjectForm({ project, images, onSave, onDelete, onImage
 
         {/* Save/Delete buttons (mobile) */}
         <div className="flex gap-3 lg:hidden">
-          {!isNew && onDelete && (
-            <button type="button" onClick={handleDelete} className={`flex-1 py-2.5 rounded-lg font-semibold text-sm border transition ${delStep ? 'bg-danger text-white border-danger animate-pulse' : 'text-danger border-danger'}`}>
-              {delStep ? '¿Eliminar?' : 'Eliminar'}
+          {onDelete && (
+            <button type="button" onClick={handleDelete} className="flex-1 py-2.5 rounded-lg font-semibold text-sm border text-danger border-danger transition hover:bg-danger hover:text-white">
+              Eliminar
             </button>
           )}
           <button type="submit" disabled={saving} className="flex-1 py-2.5 bg-emerald-brand text-white rounded-lg font-semibold text-sm hover:bg-emerald-hover transition disabled:opacity-50">

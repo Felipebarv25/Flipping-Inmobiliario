@@ -13,7 +13,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   const [images, setImages] = useState<ProjectImage[]>([])
   const [loadingProject, setLoadingProject] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [delStep, setDelStep] = useState(0)
+  const [deleting, setDeleting] = useState(false)
 
   const fetchProject = useCallback(async () => {
     const { data } = await supabase
@@ -60,7 +60,8 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   }
 
   const handleDelete = async () => {
-    if (delStep === 0) { setDelStep(1); return }
+    if (!confirm('¿Seguro que desea eliminar la propiedad?')) return
+    setDeleting(true)
     const { data: imgs } = await supabase
       .from('project_images')
       .select('url')
@@ -87,9 +88,10 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
         <div className="flex gap-2">
           <button
             onClick={handleDelete}
-            className={`px-3 py-2 rounded-lg font-semibold text-sm border transition ${delStep ? 'bg-danger text-white border-danger animate-pulse' : 'text-danger border-danger'}`}
+            disabled={deleting}
+            className="px-3 py-2 rounded-lg font-semibold text-sm border text-danger border-danger transition hover:bg-danger hover:text-white disabled:opacity-50"
           >
-            {delStep ? '¿Eliminar?' : 'Eliminar'}
+            {deleting ? 'Eliminando...' : 'Eliminar'}
           </button>
           <button type="button" onClick={() => (document.getElementById('project-form') as HTMLFormElement)?.requestSubmit()} disabled={saving} className="px-5 py-2 bg-emerald-brand text-white rounded-lg font-semibold text-sm hover:bg-emerald-hover transition disabled:opacity-50">
             {saving ? 'Guardando...' : 'Guardar'}
