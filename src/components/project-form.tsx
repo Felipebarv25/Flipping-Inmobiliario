@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useRef, MutableRefObject } from 'react'
+import { useState, useMemo } from 'react'
 import { Project, ProjectImage, ProjectStatus, STATUS_CONFIG, DEFAULT_FINANCIALS, Financials, ObraItems, OBRA_LABELS } from '@/lib/types'
 import { calculate } from '@/lib/calc'
 import CurrencyInput from './currency-input'
@@ -16,12 +16,11 @@ interface Props {
   onDelete?: () => Promise<void>
   onImagesChange: (images: ProjectImage[]) => void
   isNew: boolean
-  saveRef?: MutableRefObject<(() => void) | null>
+  saving?: boolean
 }
 
-export default function ProjectForm({ project, images, onSave, onDelete, onImagesChange, isNew, saveRef }: Props) {
+export default function ProjectForm({ project, images, onSave, onDelete, onImagesChange, isNew, saving }: Props) {
   const [form, setForm] = useState<Project>(project)
-  const [saving, setSaving] = useState(false)
 
   const [obraOpen, setObraOpen] = useState(false)
   const [notes, setNotes] = useState(project.notes || '')
@@ -51,14 +50,11 @@ export default function ProjectForm({ project, images, onSave, onDelete, onImage
     return Object.values(obra).reduce((s, v) => s + (v || 0), 0)
   }, [f.obra])
 
-  const handleSave = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
     if (!form.name.trim()) { alert('El nombre del proyecto es obligatorio.'); return }
-    setSaving(true)
     await onSave({ ...form, notes })
-    setSaving(false)
   }
-
-  if (saveRef) saveRef.current = handleSave
 
   const handleDelete = async () => {
     if (onDelete) await onDelete()
@@ -79,7 +75,7 @@ export default function ProjectForm({ project, images, onSave, onDelete, onImage
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_370px] gap-6 items-start">
+    <form id="project-form" onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-[1fr_370px] gap-6 items-start">
       {/* Left column - Inputs */}
       <div className="space-y-5">
         {/* Project Info */}
@@ -235,12 +231,12 @@ export default function ProjectForm({ project, images, onSave, onDelete, onImage
               Eliminar
             </button>
           )}
-          <button type="button" onClick={handleSave} disabled={saving} className="flex-1 py-2.5 bg-emerald-brand text-white rounded-lg font-semibold text-sm hover:bg-emerald-hover transition disabled:opacity-50">
+          <button type="submit" disabled={saving} className="flex-1 py-2.5 bg-emerald-brand text-white rounded-lg font-semibold text-sm hover:bg-emerald-hover transition disabled:opacity-50">
             {saving ? 'Guardando...' : 'Guardar'}
           </button>
         </div>
       </div>
-    </div>
+    </form>
   )
 }
 

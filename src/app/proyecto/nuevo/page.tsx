@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Project, DEFAULT_FINANCIALS } from '@/lib/types'
@@ -31,21 +31,26 @@ const emptyProject: Project = {
 
 export default function NewProjectPage() {
   const router = useRouter()
-  const saveRef = useRef<(() => void) | null>(null)
+  const [saving, setSaving] = useState(false)
 
   const handleSave = async (project: Project) => {
-    const { id, created_at, updated_at, ...data } = project
-    const { data: inserted, error } = await supabase
-      .from('projects')
-      .insert(data)
-      .select('id')
-      .single()
+    setSaving(true)
+    try {
+      const { id, created_at, updated_at, ...data } = project
+      const { data: inserted, error } = await supabase
+        .from('projects')
+        .insert(data)
+        .select('id')
+        .single()
 
-    if (error) {
-      alert('Error al guardar: ' + error.message)
-      return
+      if (error) {
+        alert('Error al guardar: ' + error.message)
+        return
+      }
+      router.push(`/proyecto/${inserted.id}`)
+    } finally {
+      setSaving(false)
     }
-    router.push(`/proyecto/${inserted.id}`)
   }
 
   return (
@@ -59,12 +64,12 @@ export default function NewProjectPage() {
           <button type="button" onClick={() => { if (confirm('¿Seguro que desea descartar esta propiedad?')) router.push('/') }} className="px-3 py-2 rounded-lg font-semibold text-sm border text-danger border-danger transition hover:bg-danger hover:text-white">
             Eliminar
           </button>
-          <button type="button" onClick={() => saveRef.current?.()} className="px-5 py-2 bg-emerald-brand text-white rounded-lg font-semibold text-sm hover:bg-emerald-hover transition">
-            Guardar
+          <button type="submit" form="project-form" disabled={saving} className="px-5 py-2 bg-emerald-brand text-white rounded-lg font-semibold text-sm hover:bg-emerald-hover transition disabled:opacity-50">
+            {saving ? 'Guardando...' : 'Guardar'}
           </button>
         </div>
       </div>
-      <ProjectForm project={emptyProject} images={[]} onSave={handleSave} onImagesChange={() => {}} isNew saveRef={saveRef} />
+      <ProjectForm project={emptyProject} images={[]} onSave={handleSave} onImagesChange={() => {}} isNew saving={saving} />
     </div>
   )
 }

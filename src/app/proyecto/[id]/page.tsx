@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, use, useRef } from 'react'
+import { useEffect, useState, useCallback, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Project, ProjectImage } from '@/lib/types'
@@ -14,7 +14,6 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   const [loadingProject, setLoadingProject] = useState(true)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const saveRef = useRef<(() => void) | null>(null)
 
   const fetchProject = useCallback(async () => {
     const { data } = await supabase
@@ -49,15 +48,18 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
 
   const handleSave = async (updated: Project) => {
     setSaving(true)
-    const { id: _, created_at, ...data } = updated
-    const { error } = await supabase
-      .from('projects')
-      .update({ ...data, updated_at: new Date().toISOString() })
-      .eq('id', id)
+    try {
+      const { id: _, created_at, ...data } = updated
+      const { error } = await supabase
+        .from('projects')
+        .update({ ...data, updated_at: new Date().toISOString() })
+        .eq('id', id)
 
-    if (error) { alert('Error: ' + error.message); setSaving(false); return }
-    setSaving(false)
-    router.push('/')
+      if (error) { alert('Error: ' + error.message); return }
+      router.push('/')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleDelete = async () => {
@@ -94,7 +96,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
           >
             {deleting ? 'Eliminando...' : 'Eliminar'}
           </button>
-          <button type="button" onClick={() => saveRef.current?.()} disabled={saving} className="px-5 py-2 bg-emerald-brand text-white rounded-lg font-semibold text-sm hover:bg-emerald-hover transition disabled:opacity-50">
+          <button type="submit" form="project-form" disabled={saving} className="px-5 py-2 bg-emerald-brand text-white rounded-lg font-semibold text-sm hover:bg-emerald-hover transition disabled:opacity-50">
             {saving ? 'Guardando...' : 'Guardar'}
           </button>
         </div>
@@ -106,7 +108,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
         onDelete={handleDelete}
         onImagesChange={setImages}
         isNew={false}
-        saveRef={saveRef}
+        saving={saving}
       />
     </div>
   )
