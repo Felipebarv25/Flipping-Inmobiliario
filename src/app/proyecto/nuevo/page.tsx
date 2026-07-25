@@ -53,7 +53,7 @@ export default function NewProjectPage() {
           ← Portafolio
         </button>
         <span className="font-bold text-lg" style={{ fontFamily: 'Georgia, serif' }}>Nueva propiedad</span>
-        <button onClick={() => document.getElementById('save-trigger')?.click()} className="px-5 py-2 bg-emerald-brand text-white rounded-lg font-semibold text-sm hover:bg-emerald-hover transition">
+        <button type="button" onClick={() => (document.getElementById('project-form') as HTMLFormElement)?.requestSubmit()} className="px-5 py-2 bg-emerald-brand text-white rounded-lg font-semibold text-sm hover:bg-emerald-hover transition">
           Guardar
         </button>
       </div>

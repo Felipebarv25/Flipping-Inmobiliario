@@ -7,6 +7,7 @@ import CurrencyInput from './currency-input'
 import VerdictPanel from './verdict-panel'
 import ImageGallery from './image-gallery'
 import CitySelect from './city-select'
+import BarrioSelect from './barrio-select'
 
 interface Props {
   project: Project
@@ -76,7 +77,7 @@ export default function ProjectForm({ project, images, onSave, onDelete, onImage
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_370px] gap-6 items-start">
+    <form id="project-form" onSubmit={e => { e.preventDefault(); handleSave() }} className="grid grid-cols-1 lg:grid-cols-[1fr_370px] gap-6 items-start">
       {/* Left column - Inputs */}
       <div className="space-y-5">
         {/* Project Info */}
@@ -90,8 +91,18 @@ export default function ProjectForm({ project, images, onSave, onDelete, onImage
               <Field label="Ciudad / Municipio"><CitySelect value={form.city} onChange={v => set('city', v)} /></Field>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Barrio"><input type="text" value={form.barrio} onChange={e => set('barrio', e.target.value)} placeholder="Cedritos" className="input-base" /></Field>
-              <Field label="Estrato"><input type="number" min={1} max={6} value={form.estrato || ''} onChange={e => set('estrato', Number(e.target.value) || null)} className="input-base" /></Field>
+              <Field label="Barrio"><BarrioSelect value={form.barrio} onChange={v => set('barrio', v)} city={form.city} /></Field>
+              <Field label="Estrato">
+                <select value={form.estrato ?? ''} onChange={e => set('estrato', e.target.value ? Number(e.target.value) : null)} className="input-base">
+                  <option value="">Seleccionar</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                  <option value="6">6</option>
+                </select>
+              </Field>
             </div>
             <div className="grid grid-cols-3 gap-3">
               <Field label="Área (m²)"><input type="number" value={form.area || ''} onChange={e => set('area', Number(e.target.value) || null)} className="input-base" /></Field>
@@ -192,10 +203,10 @@ export default function ProjectForm({ project, images, onSave, onDelete, onImage
         {/* Transaction */}
         <Section title="Transacción">
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Costos compra"><CurrencyInput value={result.transCompra} onChange={setTransCompra} /></Field>
-            <Field label="Costos venta"><CurrencyInput value={result.transVenta} onChange={setTransVenta} /></Field>
-            <Field label="Comisión inmobiliaria"><CurrencyInput value={result.comision} onChange={setComision} /></Field>
-            <Field label="Impuesto ganancia"><CurrencyInput value={result.impuesto} onChange={setImpuesto} /></Field>
+            <Field label="Costos compra" hint="~2% del precio"><CurrencyInput value={result.transCompra} onChange={setTransCompra} /></Field>
+            <Field label="Costos venta" hint="~1.3% del ARV"><CurrencyInput value={result.transVenta} onChange={setTransVenta} /></Field>
+            <Field label="Comisión inmobiliaria" hint="~3% del ARV"><CurrencyInput value={result.comision} onChange={setComision} /></Field>
+            <Field label="Impuesto ganancia" hint="~15% de la ganancia"><CurrencyInput value={result.impuesto} onChange={setImpuesto} /></Field>
           </div>
         </Section>
       </div>
@@ -218,16 +229,16 @@ export default function ProjectForm({ project, images, onSave, onDelete, onImage
         {/* Save/Delete buttons (mobile) */}
         <div className="flex gap-3 lg:hidden">
           {!isNew && onDelete && (
-            <button onClick={handleDelete} className={`flex-1 py-2.5 rounded-lg font-semibold text-sm border transition ${delStep ? 'bg-danger text-white border-danger animate-pulse' : 'text-danger border-danger'}`}>
+            <button type="button" onClick={handleDelete} className={`flex-1 py-2.5 rounded-lg font-semibold text-sm border transition ${delStep ? 'bg-danger text-white border-danger animate-pulse' : 'text-danger border-danger'}`}>
               {delStep ? '¿Eliminar?' : 'Eliminar'}
             </button>
           )}
-          <button onClick={handleSave} disabled={saving} className="flex-1 py-2.5 bg-emerald-brand text-white rounded-lg font-semibold text-sm hover:bg-emerald-hover transition disabled:opacity-50">
+          <button type="submit" disabled={saving} className="flex-1 py-2.5 bg-emerald-brand text-white rounded-lg font-semibold text-sm hover:bg-emerald-hover transition disabled:opacity-50">
             {saving ? 'Guardando...' : 'Guardar'}
           </button>
         </div>
       </div>
-    </div>
+    </form>
   )
 }
 
@@ -240,10 +251,13 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
-function Field({ label, children, full }: { label: string; children: React.ReactNode; full?: boolean }) {
+function Field({ label, children, full, hint }: { label: string; children: React.ReactNode; full?: boolean; hint?: string }) {
   return (
     <label className={`block ${full ? '' : ''}`}>
-      <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{label}</span>
+      <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+        {label}
+        {hint && <span className="ml-1 text-[10px] font-normal text-gray-400 dark:text-gray-500">{hint}</span>}
+      </span>
       {children}
     </label>
   )

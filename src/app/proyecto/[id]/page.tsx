@@ -91,10 +91,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
           >
             {delStep ? '¿Eliminar?' : 'Eliminar'}
           </button>
-          <button onClick={() => {
-            const form = document.querySelector('[data-save-btn]') as HTMLButtonElement
-            form?.click()
-          }} disabled={saving} className="px-5 py-2 bg-emerald-brand text-white rounded-lg font-semibold text-sm hover:bg-emerald-hover transition disabled:opacity-50">
+          <button type="button" onClick={() => (document.getElementById('project-form') as HTMLFormElement)?.requestSubmit()} disabled={saving} className="px-5 py-2 bg-emerald-brand text-white rounded-lg font-semibold text-sm hover:bg-emerald-hover transition disabled:opacity-50">
             {saving ? 'Guardando...' : 'Guardar'}
           </button>
         </div>
